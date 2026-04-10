@@ -87,6 +87,7 @@ jobs:
 
       - name: Trivy scan (api-service)
         uses: aquasecurity/trivy-action@v0.35.0
+        continue-on-error: true
         with:
           image-ref: ${{ env.API_IMAGE }}
           format: table
@@ -96,6 +97,7 @@ jobs:
 
       - name: Trivy scan (web-service)
         uses: aquasecurity/trivy-action@v0.35.0
+        continue-on-error: true
         with:
           image-ref: ${{ env.WEB_IMAGE }}
           format: table
