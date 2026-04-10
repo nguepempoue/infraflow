@@ -25,11 +25,13 @@ jobs:
         uses: hadolint/hadolint-action@v3.1.0
         with:
           dockerfile: api-service/Dockerfile
+          failure-threshold: error
 
       - name: Lint Dockerfile (web-service)
         uses: hadolint/hadolint-action@v3.1.0
         with:
           dockerfile: web-service/Dockerfile
+          failure-threshold: error
 
       - name: Lint YAML
         run: |
