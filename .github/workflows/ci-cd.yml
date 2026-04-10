@@ -37,7 +37,7 @@ jobs:
           yamllint -d '{extends: default, rules: {document-start: disable, line-length: disable}}' .
 
       - name: Lint Bash (ShellCheck)
-        uses: ludeeus/action-shellcheck@v2
+        uses: ludeeus/action-shellcheck@2.0.0
         with:
           scandir: scripts
 
@@ -137,4 +137,3 @@ jobs:
           set -euo pipefail
           docker push "${API_IMAGE}"
           docker push "${WEB_IMAGE}"
-
