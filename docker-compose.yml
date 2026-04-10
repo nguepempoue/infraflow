@@ -1,0 +1,35 @@
+services:
+  api-service:
+    build:
+      context: ./api-service
+    image: infraflow/api-service:${INFRAFLOW_TAG:-local}
+    networks:
+      - infraflow-net
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:8080/get >/dev/null 2>&1 || exit 1"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
+
+  web-service:
+    build:
+      context: ./web-service
+    image: infraflow/web-service:${INFRAFLOW_TAG:-local}
+    depends_on:
+      api-service:
+        condition: service_healthy
+    ports:
+      - "${WEB_PORT:-8080}:8080"
+    networks:
+      - infraflow-net
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:8080/status >/dev/null 2>&1 || exit 1"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
+
+networks:
+  infraflow-net:
+    name: infraflow-net

@@ -1,0 +1,13 @@
+.git
+.github
+.vscode
+.idea
+.DS_Store
+*.log
+*.tmp
+node_modules
+dist
+build
+target
+__pycache__
+

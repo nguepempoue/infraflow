@@ -1,0 +1,90 @@
+1) Architecture d’exécution (local + Kubernetes + monitoring)
+
+flowchart TB
+  %% ===== Local dev machine =====
+  subgraph DEV["Poste local (toi)"]
+    CLI["CLI: docker / kubectl / helm / curl"]
+    Browser["Navigateur (accès local)"]
+  end
+
+  %% ===== Two runtime modes =====
+  subgraph RUNTIME["Modes d'exécution"]
+    direction TB
+
+    subgraph DC["Mode 1: Docker Compose (local)"]
+      DCWeb["web-service (Nginx)"]
+      DCApi["api-service (httpbin-like)"]
+      DCWeb -->|reverse proxy| DCApi
+      DCIngress["http://localhost:8080"]
+      DCIngress --> DCWeb
+    end
+
+    subgraph K8S["Mode 2: Kubernetes local (minikube ou kind)"]
+      direction TB
+
+      subgraph NS["Namespace: infraflow"]
+        direction TB
+        WSDeploy["Deployment web-service (replicas>=2)\n- probes\n- resources\n- runAsNonRoot\n- image: sha-*"]
+        APIDeploy["Deployment api-service (replicas>=2)\n- probes\n- resources\n- runAsNonRoot\n- image: sha-*"]
+        WSService["Service web-service\nNodePort/LoadBalancer\n(ou port-forward)"]
+        APIService["Service api-service\nClusterIP"]
+        NginxCM["ConfigMap nginx.conf"]
+
+        WSService --> WSDeploy
+        APIService --> APIDeploy
+        WSDeploy -->|proxy_pass| APIService
+        NginxCM -->|mount| WSDeploy
+
+        HPA["HPA api-service\nCPU 70%"] --> APIDeploy
+      end
+
+      subgraph MON["Namespace: monitoring (Helm)"]
+        direction TB
+        KPS["kube-prometheus-stack\nPrometheus + Grafana + Alertmanager"]
+        PRule["PrometheusRule\n(ex: pod down > 1 min)"]
+        PRule --> KPS
+      end
+
+      KPS -->|scrape metrics| NS
+    end
+  end
+
+  %% ===== Access paths =====
+  CLI -->|docker compose up -d| DC
+  CLI -->|kubectl apply -f k8s/| K8S
+  CLI -->|helm install kube-prometheus-stack| MON
+
+  Browser -->|localhost:8080/get| DCIngress
+  Browser -->|port-forward / minikube service| WSService
+  Browser -->|kubectl port-forward svc/monitoring-grafana 3000:80| KPS
+
+2-Chaîne CI/CD (GitHub Actions)
+flowchart LR
+  Dev["Dev: git push / PR"] --> GH["GitHub Repo"]
+
+  GH --> GA["GitHub Actions\nworkflow: .github/workflows/ci-cd.yml"]
+
+  GA --> LINT["Job: lint-and-test\n- hadolint (Dockerfile)\n- yamllint\n- shellcheck (Bash)"]
+  LINT --> BUILD["Job: build\n- build 2 images\n- tag: sha-${GITHUB_SHA}"]
+  BUILD --> SCAN["Job: security-scan\n- Trivy scan\n- FAIL si CRITICAL\n- rapport en artefact"]
+  SCAN --> PUSH["Job: push (main only)\n- login via GitHub Secrets\n- push images"]
+
+  PUSH --> REG["Registry\nGHCR ou DockerHub"]
+
+  REG --> K8SDEPLOY["Cluster local\n(minikube/kind)\n- pull image sha-*"]
+
+
+Validation recette (à faire après la CI)
+
+- Docker: 1 commande, health checks OK, curl 200
+- Kubernetes: pods Running (replicas≥2), probes/resources, pas de :latest, HPA visible
+- Monitoring: Grafana accessible, dashboard CPU/mémoire infraflow, alerte présente
+- Script: deploy.sh exécute le déploiement bout-en-bout
+  - Note: le script est en Bash; sous Windows, utilise Git Bash/WSL, ou dis-moi si tu veux une variante PowerShell
+
+Souhaites-tu que je:
+
+- prépare les instructions exactes pour configurer ton repo GitHub (nom/owner) et vérifier GHCR, ou
+- ajoute une version PowerShell de deploy.sh pour un usage Windows pur, ou
+- génère le README conforme à la recette (si tu valides que je crée ce fichier) ?
+

@@ -1,0 +1,140 @@
+name: ci-cd
+
+on:
+  push:
+    branches:
+      - main
+  pull_request: {}
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  REGISTRY: ghcr.io
+  API_IMAGE: ghcr.io/${{ github.repository_owner }}/infraflow-api-service:sha-${{ github.sha }}
+  WEB_IMAGE: ghcr.io/${{ github.repository_owner }}/infraflow-web-service:sha-${{ github.sha }}
+
+jobs:
+  lint-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Lint Dockerfile (api-service)
+        uses: hadolint/hadolint-action@v3.1.0
+        with:
+          dockerfile: api-service/Dockerfile
+
+      - name: Lint Dockerfile (web-service)
+        uses: hadolint/hadolint-action@v3.1.0
+        with:
+          dockerfile: web-service/Dockerfile
+
+      - name: Lint YAML
+        run: |
+          python3 -m pip install --no-cache-dir yamllint
+          yamllint -d '{extends: default, rules: {document-start: disable, line-length: disable}}' .
+
+      - name: Lint Bash (ShellCheck)
+        uses: ludeeus/action-shellcheck@v2
+        with:
+          scandir: scripts
+
+  build:
+    runs-on: ubuntu-latest
+    needs:
+      - lint-and-test
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build images (tag sha)
+        run: |
+          set -euo pipefail
+          docker build -t "${API_IMAGE}" ./api-service
+          docker build -t "${WEB_IMAGE}" ./web-service
+
+      - name: Save images as artifacts
+        run: |
+          set -euo pipefail
+          mkdir -p dist
+          docker save "${API_IMAGE}" -o dist/api-service.tar
+          docker save "${WEB_IMAGE}" -o dist/web-service.tar
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: docker-images-${{ github.sha }}
+          path: dist/*.tar
+          if-no-files-found: error
+
+  security-scan:
+    runs-on: ubuntu-latest
+    needs:
+      - build
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: docker-images-${{ github.sha }}
+          path: dist
+
+      - name: Load images
+        run: |
+          set -euo pipefail
+          docker load -i dist/api-service.tar
+          docker load -i dist/web-service.tar
+
+      - name: Trivy scan (api-service)
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          image-ref: ${{ env.API_IMAGE }}
+          format: table
+          output: trivy-api-service.txt
+          severity: CRITICAL
+          exit-code: "1"
+
+      - name: Trivy scan (web-service)
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          image-ref: ${{ env.WEB_IMAGE }}
+          format: table
+          output: trivy-web-service.txt
+          severity: CRITICAL
+          exit-code: "1"
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: trivy-reports-${{ github.sha }}
+          path: trivy-*.txt
+          if-no-files-found: error
+
+  push:
+    runs-on: ubuntu-latest
+    needs:
+      - security-scan
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: docker-images-${{ github.sha }}
+          path: dist
+
+      - name: Load images
+        run: |
+          set -euo pipefail
+          docker load -i dist/api-service.tar
+          docker load -i dist/web-service.tar
+
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Push images
+        run: |
+          set -euo pipefail
+          docker push "${API_IMAGE}"
+          docker push "${WEB_IMAGE}"
+

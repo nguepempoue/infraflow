@@ -1,0 +1,20 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: infraflow-alerts
+  namespace: monitoring
+  labels:
+    release: monitoring
+spec:
+  groups:
+    - name: infraflow.rules
+      rules:
+        - alert: InfraflowPodNotReady
+          expr: sum by (namespace, pod) (kube_pod_status_ready{namespace="infraflow", condition="true"} == 0) > 0
+          for: 1m
+          labels:
+            severity: warning
+          annotations:
+            summary: "InfraFlow pod not ready"
+            description: "Pod {{ $labels.pod }} in namespace {{ $labels.namespace }} is not ready for more than 1 minute."
+
