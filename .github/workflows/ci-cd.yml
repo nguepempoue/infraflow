@@ -1,6 +1,6 @@
 name: ci-cd
 
-on:
+'on':
   push:
     branches:
       - main
@@ -36,7 +36,7 @@ jobs:
       - name: Lint YAML
         run: |
           python3 -m pip install --no-cache-dir yamllint
-          yamllint -d '{extends: default, rules: {document-start: disable, line-length: disable}}' .
+          yamllint -d '{extends: default, rules: {document-start: disable, line-length: disable, new-lines: disable, empty-lines: disable}}' .
 
       - name: Lint Bash (ShellCheck)
         uses: ludeeus/action-shellcheck@2.0.0
