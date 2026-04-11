@@ -17,4 +17,3 @@ spec:
           annotations:
             summary: "InfraFlow pod not ready"
             description: "Pod {{ $labels.pod }} in namespace {{ $labels.namespace }} is not ready for more than 1 minute."
-

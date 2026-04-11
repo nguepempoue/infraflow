@@ -63,4 +63,3 @@ spec:
         - name: nginx-config
           configMap:
             name: web-service-nginx
-

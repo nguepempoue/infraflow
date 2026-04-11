@@ -22,4 +22,3 @@ data:
         proxy_pass http://api-service:8080;
       }
     }
-
