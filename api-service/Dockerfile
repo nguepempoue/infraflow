@@ -1,4 +1,4 @@
-FROM golang:1.23-alpine AS builder
+FROM golang:1.24.13-alpine AS builder
 
 RUN apk add --no-cache ca-certificates git
 
@@ -18,4 +18,3 @@ EXPOSE 8080
 
 ENTRYPOINT ["go-httpbin"]
 CMD ["-port", "8080"]
-
