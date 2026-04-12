@@ -61,6 +61,17 @@ kubectl -n infraflow port-forward svc/web-service 8080:8080
   <pre>
 minikube addons enable ingress
 minikube addons enable dashboard
+minikube addons enable metrics-server
+  </pre>
+
+  <h2>8bis. Vérifier les métriques (HPA)</h2>
+  <pre>
+# Afficher les métriques (si metrics-server est OK)
+kubectl top nodes
+kubectl top pods -n infraflow
+
+# Vérifier l'état du HPA
+kubectl get hpa -n infraflow
   </pre>
 
   <h2>9. Tester avec curl (optionnel)</h2>

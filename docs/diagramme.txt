@@ -73,3 +73,26 @@ flowchart LR
 
   REG --> K8SDEPLOY["Cluster local\n(minikube/kind)\n- pull image sha-*"]
 
+
+
+Validation recette (à faire après la CI)
+
+- Docker: 1 commande, health checks OK, curl 200
+- Kubernetes: pods Running (replicas≥2), probes/resources, pas de :latest, HPA visible
+- Monitoring: Grafana accessible, dashboard CPU/mémoire infraflow, alerte présente
+- Script: deploy.sh exécute le déploiement bout-en-bout
+  - Note: le script est en Bash; sous Windows, utilise Git Bash/WSL, ou dis-moi si tu veux une variante PowerShell
+
+À ce stade, le “socle” est en place (Docker/Compose, manifests K8s, monitoring, CI/CD + push GHCR). Pour “terminer” le projet au sens livraison/recette, il manque surtout les éléments de finalisation ci‑dessous (dans l’ordre le plus logique).
+
+Ce Qui Manque Pour Une Livraison Propre
+
+- Documentation de lancement (souvent exigée) : un README “run en < 5 min” (Compose + K8s + accès Grafana/Prometheus + URLs + troubleshooting). Actuellement il n’y a pas de README dans le repo.
+- Script de déploiement réellement exécutable sur ton poste : on a deploy.sh , mais sur Windows il te faut Git Bash/WSL (et chez toi, bash ne marche pas via WSL). Donc soit on fournit une version PowerShell, soit on standardise l’environnement (Git Bash).
+- Politique “Sécurité” claire : le pipeline passe car Trivy est actuellement non bloquant (les rapports sont produits). Pour clôturer, il faut choisir :
+  - soit “bloquant si CRITICAL” (et corriger/mitiger jusqu’à zéro CRITICAL),
+  - soit “report-only” (mais alors l’acceptation doit le dire explicitement).
+- Observabilité applicative : Prometheus/Grafana tournent, mais aujourd’hui on ne “branche” pas explicitement l’app (pas de ServiceMonitor/PodMonitor / dashboards dédiés à l’app). On a une règle d’alerte K8s générique via prometheusrule.yml , mais pas encore un set “SLO/alertes” orienté service.
+- Recette finale / critères d’acceptation : une checklist reproductible (smoke tests : /status, /get, scaling HPA, redémarrage pods, accès GHCR, etc.). Aujourd’hui on a les pièces, mais pas la validation formalisée.
+Si tu me dis ce que tu considères comme “terminé” (plutôt démo technique vs livrable complet ), je déroule la suite dans le repo : en général je commence par le README + script PowerShell de déploiement, puis je verrouille la politique Trivy.
+
