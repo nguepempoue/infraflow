@@ -17,3 +17,43 @@ spec:
           annotations:
             summary: "InfraFlow pod not ready"
             description: "Pod {{ $labels.pod }} in namespace {{ $labels.namespace }} is not ready for more than 1 minute."
+        - alert: InfraflowApiServiceDeploymentNotAvailable
+          expr: kube_deployment_status_replicas_available{namespace="infraflow", deployment="api-service"} < 1
+          for: 2m
+          labels:
+            severity: critical
+          annotations:
+            summary: "InfraFlow api-service is not available"
+            description: "Deployment api-service has no available replicas for more than 2 minutes in namespace infraflow."
+        - alert: InfraflowWebServiceDeploymentNotAvailable
+          expr: kube_deployment_status_replicas_available{namespace="infraflow", deployment="web-service"} < 1
+          for: 2m
+          labels:
+            severity: critical
+          annotations:
+            summary: "InfraFlow web-service is not available"
+            description: "Deployment web-service has no available replicas for more than 2 minutes in namespace infraflow."
+        - alert: InfraflowApiServiceRestartsHigh
+          expr: sum(increase(kube_pod_container_status_restarts_total{namespace="infraflow", container="api-service"}[10m])) > 3
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "InfraFlow api-service restarts are high"
+            description: "api-service containers restarted more than 3 times over 10 minutes in namespace infraflow."
+        - alert: InfraflowWebServiceRestartsHigh
+          expr: sum(increase(kube_pod_container_status_restarts_total{namespace="infraflow", container="web-service"}[10m])) > 3
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "InfraFlow web-service restarts are high"
+            description: "web-service containers restarted more than 3 times over 10 minutes in namespace infraflow."
+        - alert: InfraflowApiServiceHPAAtMax
+          expr: kube_horizontalpodautoscaler_status_current_replicas{namespace="infraflow", horizontalpodautoscaler="api-service"} >= kube_horizontalpodautoscaler_spec_max_replicas{namespace="infraflow", horizontalpodautoscaler="api-service"}
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "InfraFlow api-service HPA is at max replicas"
+            description: "HPA api-service is running at its maximum replicas for more than 5 minutes in namespace infraflow."

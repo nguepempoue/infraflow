@@ -59,6 +59,29 @@ spec:
             capabilities:
               drop:
                 - ALL
+        - name: nginx-metrics
+          image: nginx/nginx-prometheus-exporter:1.1.0
+          imagePullPolicy: IfNotPresent
+          args:
+            - --nginx.scrape-uri=http://127.0.0.1:8080/nginx_status
+          ports:
+            - name: metrics
+              containerPort: 9113
+          resources:
+            requests:
+              cpu: 5m
+              memory: 16Mi
+            limits:
+              cpu: 50m
+              memory: 64Mi
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 101
+            runAsGroup: 101
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
       volumes:
         - name: nginx-config
           configMap:

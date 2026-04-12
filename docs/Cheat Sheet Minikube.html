@@ -74,14 +74,38 @@ kubectl top pods -n infraflow
 kubectl get hpa -n infraflow
   </pre>
 
-  <h2>9. Tester avec curl (optionnel)</h2>
+  <h2>9. Monitoring (Prometheus / Grafana)</h2>
+  <pre>
+# Prometheus UI (port-forward) :
+# si 9090 est déjà utilisé, remplace par 9091:9090
+kubectl -n monitoring port-forward svc/monitoring-kube-prometheus-prometheus 9091:9090
+
+# Ouvrir :
+# http://127.0.0.1:9091/query
+#
+# Exemples de requêtes :
+# up
+# up{namespace="infraflow"}
+# up{job="monitoring/infraflow-web-service"}
+
+# Grafana UI (port-forward) :
+kubectl -n monitoring port-forward svc/monitoring-grafana 3000:80
+
+# Mot de passe admin Grafana :
+kubectl -n monitoring get secret monitoring-grafana -o jsonpath="{.data.admin-password}" | base64 -d
+
+# Ouvrir :
+# http://localhost:3000 (user: admin)
+  </pre>
+
+  <h2>10. Tester avec curl (optionnel)</h2>
   <pre>
 curl http://localhost:8080
 # Sur PowerShell :
 Invoke-WebRequest http://localhost:8080
   </pre>
 
-  <h2>10. Arrêter et supprimer le cluster</h2>
+  <h2>11. Arrêter et supprimer le cluster</h2>
   <pre>
 minikube stop
 minikube delete
