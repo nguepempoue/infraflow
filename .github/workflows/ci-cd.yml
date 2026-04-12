@@ -94,6 +94,12 @@ jobs:
           severity: CRITICAL
           exit-code: "1"
 
+      - name: Show Trivy report (api-service)
+        if: always()
+        run: |
+          echo "=== Trivy report: api-service ==="
+          cat trivy-api-service.txt || true
+
       - name: Trivy scan (web-service)
         uses: aquasecurity/trivy-action@v0.35.0
         with:
@@ -102,6 +108,12 @@ jobs:
           output: trivy-web-service.txt
           severity: CRITICAL
           exit-code: "1"
+
+      - name: Show Trivy report (web-service)
+        if: always()
+        run: |
+          echo "=== Trivy report: web-service ==="
+          cat trivy-web-service.txt || true
 
       - uses: actions/upload-artifact@v4
         if: always()
